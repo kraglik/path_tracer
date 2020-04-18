@@ -232,9 +232,9 @@ vec3d div_dv(double x, vec3d a) {
 
 vec3d random_vector() {
     vec3d vec = {
-        .x = (double)rand() / RAND_MAX,
-        .y = (double)rand() / RAND_MAX,
-        .z = (double)rand() / RAND_MAX
+        .x = ((double)rand() / RAND_MAX) * 2.0 - 1.0,
+        .y = ((double)rand() / RAND_MAX) * 2.0 - 1.0,
+        .z = ((double)rand() / RAND_MAX) * 2.0 - 1.0
     };
 
     return norm(vec);
