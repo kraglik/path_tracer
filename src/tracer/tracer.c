@@ -169,10 +169,12 @@ void trace_to_file(tracer* t, const char* path) {
         }
 
         if (sample % 10 == 0) {
+            printf("%lu sample\n", sample + 1);
             update_image(img, colors, c->screen.width, c->screen.height, sample + 1, path);
         }
     }
 
+    printf("done.\n");
     update_image(img, colors, c->screen.width, c->screen.height, t->config->samples_per_pixel, path);
 }
 
