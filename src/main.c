@@ -12,7 +12,7 @@ int main() {
         .emittance_texture = build_single_color_texture(build_vec(1, 0, 0)),
         .emittance_strength = 0.5, // M_PI * 4,
         .reflect = 1.0,
-        .reflect_randomness = 1.0,
+        .reflect_randomness = 0.3,
         .diffuse = 0.0,
         .refract = 0,
         .refract_randomness = 0,
@@ -24,7 +24,7 @@ int main() {
         .emittance_texture = build_single_color_texture(build_vec(0, 1, 0)),
         .emittance_strength = 0, // M_PI / 2,
         .reflect = 1.0,
-        .reflect_randomness = 0.05,
+        .reflect_randomness = 0.01,
         .diffuse = 0.2,
         .refract = 0,
         .refract_randomness = 0,
@@ -60,10 +60,10 @@ int main() {
         .emittance_texture = build_single_color_texture(build_vec(1, 1, 1)),
         .emittance_strength = 0.0,
         .diffuse = 0.0,
-        .reflect = 0.01,
-        .reflect_randomness = 0.05,
-        .refract = 0.99,
-        .refract_randomness = 0.05,
+        .reflect = 0.1,
+        .reflect_randomness = 0.1,
+        .refract = 0.9,
+        .refract_randomness = 0.1,
         .refract_index = 10.0
     };
 
@@ -122,9 +122,9 @@ int main() {
     );
 
     object* s6 = build_sphere(
-            build_vec(4, 1, -2),
-            1.0,
-            &s6mat
+        build_vec(4, 1, -2),
+        1.0,
+        &s6mat
     );
 
     object* p1 = build_plane(
@@ -152,7 +152,7 @@ int main() {
 
     tracer_config t_conf = {
         .recursion_depth = 6,
-        .samples_per_pixel = 400
+        .samples_per_pixel = 1200
     };
 
     tracer t = {

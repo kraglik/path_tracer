@@ -118,32 +118,61 @@ color trace_ray(tracer* t, ray r, size_t depth) {
     return add_vv(mul_vd(emit_c, h.material->emittance_strength), incoming);
 }
 
+
+void update_image(
+        BMP* img,
+        color* colors,
+        size_t width,
+        size_t height,
+        size_t n_samples,
+        const char* path
+    ) {
+
+    for (size_t x = 0; x < width; x++) {
+        for (size_t y = 0; y < height; y++) {
+            color c = clip(0, 1, div_vd(colors[y * width + x], n_samples));
+
+            int r = (int)(c.x * 255.0);
+            int g = (int)(c.y * 255.0);
+            int b = (int)(c.z * 255.0);
+
+            BMP_SetPixelRGB(img, x, y, r, g, b);
+        }
+    }
+    BMP_WriteFile(img, path);
+}
+
+
 void trace_to_file(tracer* t, const char* path) {
 
     camera* c = t->camera;
 
     BMP* img = BMP_Create(c->screen.width, c->screen.height, 24);
 
-    for (size_t x = 0; x < c->screen.width; x++) {
-        for (size_t y = 0; y < c->screen.height; y++) {
-            color clr = build_vec(0, 0, 0);
+    color* colors = malloc(sizeof(color) * c->screen.width * c->screen.height);
 
-            for (size_t sample = 0; sample < t->config->samples_per_pixel; sample++) {
+    for (size_t i = 0; i < c->screen.width * c->screen.height; i++) {
+        colors[i] = build_vec(0, 0, 0);
+    }
+
+    for (size_t sample = 0; sample < t->config->samples_per_pixel; sample++) {
+
+        for (size_t x = 0; x < c->screen.width; x++) {
+            for (size_t y = 0; y < c->screen.height; y++) {
+
                 ray r = spawn_random_ray(c, x, y);
-                clr = add_vv(clr, trace_ray(t, r, t->config->recursion_depth));
+
+                color clr = trace_ray(t, r, t->config->recursion_depth);
+
+                colors[c->screen.width * y + x] = add_vv(colors[c->screen.width * y + x], clr);
             }
+        }
 
-            clr = clip(0, 1, div_vd(clr, t->config->samples_per_pixel));
-
-            int r = (int)(clr.x * 255.0);
-            int g = (int)(clr.y * 255.0);
-            int b = (int)(clr.z * 255.0);
-
-            BMP_SetPixelRGB(img, x, y, r, g, b);
-
+        if (sample % 10 == 0) {
+            update_image(img, colors, c->screen.width, c->screen.height, sample + 1, path);
         }
     }
 
-    BMP_WriteFile(img, path);
+    update_image(img, colors, c->screen.width, c->screen.height, t->config->samples_per_pixel, path);
 }
 
