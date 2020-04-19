@@ -16,10 +16,18 @@ texture* build_single_color_texture(color c);
 typedef struct material {
 
     texture* emittance_texture;
-    texture* surface_structure;
+    texture* surface_texture;
 
-    double ke;  // emittance coefficient
-    double kr;  // reflectance coefficient
+    double emittance_strength;  // emittance coefficient
+
+    double diffuse;
+
+    double reflect;
+    double reflect_randomness;
+
+    double refract;
+    double refract_randomness;
+    double refract_index;
 
 } material;
 

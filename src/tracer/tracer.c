@@ -16,7 +16,7 @@ bool best_hit(tracer* t, ray r, hit* out) {
     bool was_hit = false;
 
     for (size_t obj = 0; obj < t->n_objects; obj++) {
-        object* o = t->objects[obj];
+        object *o = t->objects[obj];
 
         if (o->intersect(o, r, &temp)) {
             vec3d dist_vec = sub_vv(temp.position, r.origin);
@@ -49,6 +49,53 @@ bool best_hit(tracer* t, ray r, hit* out) {
 }
 
 
+color trace_reflect(tracer* t, ray r, hit* hit, size_t depth) {
+
+    if (hit->material->reflect == 0)
+        return build_vec(0, 0, 0);
+
+    vec2d t_coords = hit->texture_coords;
+    void* texture_data = hit->material->surface_texture->data;
+    color surface_color = hit->material->surface_texture->get_color_at(texture_data, t_coords.x, t_coords.y);
+
+    vec3d reflect_dir = reflect(r.direction, hit->normal);
+    vec3d noise = random_hemisphere_vec(reflect_dir);
+
+    reflect_dir = norm(add_vv(reflect_dir, mul_vd(noise, hit->material->reflect_randomness)));
+
+    ray reflected_ray = { .origin = hit->position, .direction = reflect_dir };
+
+    color incoming = trace_ray(t, shift(reflected_ray, EPSILON * 1.01), depth - 1);
+
+    color result = mul_vv(surface_color, incoming);
+    result = mul_vd(result, 1.0 - hit->material->diffuse);
+    result = add_vv(result, mul_vd(surface_color, len(incoming) * hit->material->diffuse));
+
+    return result;
+}
+
+
+color trace_refract(tracer* t, ray r, hit* hit, size_t depth) {
+    if (hit->material->refract == 0)
+        return build_vec(0, 0, 0);
+
+    vec2d t_coords = hit->texture_coords;
+    void* texture_data = hit->material->surface_texture->data;
+    color surface_color = hit->material->surface_texture->get_color_at(texture_data, t_coords.x, t_coords.y);
+
+    vec3d refract_dir = refract(r.direction, hit->normal, hit->material->refract_index);
+    vec3d noise = random_hemisphere_vec(refract_dir);
+
+    refract_dir = norm(add_vv(refract_dir, mul_vd(noise, hit->material->refract_randomness)));
+
+    ray refracted_ray = { .origin = hit->position, .direction = refract_dir };
+
+    color incoming = trace_ray(t, shift(refracted_ray, EPSILON * 1.01), depth - 1);
+
+    return mul_vv(incoming, surface_color);
+}
+
+
 color trace_ray(tracer* t, ray r, size_t depth) {
     if (depth == 0)
         return t->background;
@@ -60,24 +107,15 @@ color trace_ray(tracer* t, ray r, size_t depth) {
     }
 
     texture* emit_texture = h.material->emittance_texture;
-    texture* surface_texture = h.material->surface_structure;
 
     color emit_c = emit_texture->get_color_at(emit_texture->data, h.texture_coords.x, h.texture_coords.y);
-    color surface_c = surface_texture->get_color_at(surface_texture->data, h.texture_coords.x, h.texture_coords.y);
 
-    ray out_r = { .origin = h.position, .direction = random_hemisphere_vec(h.normal) };
-    color incoming = trace_ray(t, shift(out_r, EPSILON * 1.01), depth - 1);
+    color reflect = mul_vd(trace_reflect(t, r, &h, depth), h.material->reflect);
+    color refract = mul_vd(trace_refract(t, r, &h, depth), h.material->refract);
 
-    double p = 1 / (2 * M_PI);
-    double brdf = h.material->kr / M_PI;
-    double cos_theta = dot(out_r.direction, h.normal);
+    color incoming = add_vv(reflect, refract);
 
-    incoming = mul_vd(
-        incoming,
-        brdf * cos_theta / p
-    );
-
-    return add_vv(mul_vd(emit_c, h.material->ke), mul_vv(incoming, surface_c));
+    return add_vv(mul_vd(emit_c, h.material->emittance_strength), incoming);
 }
 
 void trace_to_file(tracer* t, const char* path) {
