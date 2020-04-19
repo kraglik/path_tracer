@@ -6,16 +6,17 @@
 
 typedef struct texture {
     void* data;
-    color (*get_color_at)(double, double);
+    color (*get_color_at)(void* data, double x, double y);
 } texture;
 
 
-texture build_single_color_texture(color c);
+texture* build_single_color_texture(color c);
 
 
 typedef struct material {
 
-    color color;
+    texture* emittance_texture;
+    texture* surface_structure;
 
     double ke;  // emittance coefficient
     double kr;  // reflectance coefficient

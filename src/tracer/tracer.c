@@ -59,7 +59,11 @@ color trace_ray(tracer* t, ray r, size_t depth) {
         return t->background;
     }
 
-    color emit = h.material->color;
+    texture* emit_texture = h.material->emittance_texture;
+    texture* surface_texture = h.material->surface_structure;
+
+    color emit_c = emit_texture->get_color_at(emit_texture->data, h.texture_coords.x, h.texture_coords.y);
+    color surface_c = surface_texture->get_color_at(surface_texture->data, h.texture_coords.x, h.texture_coords.y);
 
     ray out_r = { .origin = h.position, .direction = random_hemisphere_vec(h.normal) };
     color incoming = trace_ray(t, shift(out_r, EPSILON * 1.01), depth - 1);
@@ -68,7 +72,12 @@ color trace_ray(tracer* t, ray r, size_t depth) {
     double brdf = h.material->kr / M_PI;
     double cos_theta = dot(out_r.direction, h.normal);
 
-    return add_vv(mul_vd(emit, h.material->ke), mul_vd(incoming, brdf * cos_theta / p));
+    incoming = mul_vd(
+        incoming,
+        brdf * cos_theta / p
+    );
+
+    return add_vv(mul_vd(emit_c, h.material->ke), mul_vv(incoming, surface_c));
 }
 
 void trace_to_file(tracer* t, const char* path) {
